@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// PRISMA_ENV=development prisma migrate dev
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model FreeAdoptionPost {
+  id          Int           @id @default(autoincrement())
+  uuid        String        @unique @default(uuid())
+  region      String
+  detailedRegion String
+  animalType  AnimalType
+  breed       String
+  sex         Sex
+  ageInMonths Int
+  description String
+  mainImage   String
+  subImages   SubImage[]
+  visible     Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  @@map("free_adoption_posts")
+}
+
+model SubImage {
+  id          Int             @id @default(autoincrement())
+  image       String
+  freeAdoptionPostId Int
+  freeAdoptionPost FreeAdoptionPost @relation(fields: [freeAdoptionPostId], references: [id])
+
+  @@map("sub_images")
+}
+
+enum AnimalType {
+  DOG
+  CAT
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
