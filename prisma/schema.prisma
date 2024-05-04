@@ -8,30 +8,32 @@ datasource db {
 }
 
 model FreeAdoptionPost {
-  id          Int           @id @default(autoincrement())
-  uuid        String        @unique @default(uuid())
-  region      String
-  detailedRegion String
-  animalType  AnimalType
-  breed       String
-  sex         Sex
-  ageInMonths Int
-  description String
-  mainImage   String
-  subImages   SubImage[]
-  visible     Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  deletedAt   DateTime?
+  id              Int           @id @default(autoincrement())
+  uuid            String        @unique @default(uuid())
+  userId          Int           @map("user_id")
+  region          String        @map("region")
+  detailedRegion  String        @map("detailed_region")
+  animalType      AnimalType    @map("animal_type")
+  breed           String        @map("breed")
+  sex             Sex           @map("sex")
+  ageInMonths     Int           @map("age_in_months")
+  description     String        @map("description")
+  mainImage       String        @map("main_image")
+  visible         Boolean       @default(true) @map("visible")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  deletedAt       DateTime?     @map("deleted_at")
+  subImages       SubImage[]
+  user            User          @relation(fields: [userId], references: [id])
 
   @@map("free_adoption_posts")
 }
 
 model SubImage {
-  id          Int             @id @default(autoincrement())
-  image       String
-  freeAdoptionPostId Int
-  freeAdoptionPost FreeAdoptionPost @relation(fields: [freeAdoptionPostId], references: [id])
+  id                Int               @id @default(autoincrement())
+  image             String            @map("image")
+  freeAdoptionPostId Int              @map("free_adoption_post_id")
+  freeAdoptionPost   FreeAdoptionPost @relation(fields: [freeAdoptionPostId], references: [id])
 
   @@map("sub_images")
 }
@@ -47,3 +49,42 @@ enum Sex {
   UNKNOWN
 }
 
+model User {
+  id               Int                @id @default(autoincrement())
+  uuid             String             @unique @default(uuid()) @map("uuid")
+  nickName         String             @map("nick_name")
+  email            String             @unique @map("email")
+  password         String             @map("password")
+  name             String             @map("name")
+  phoneNumber      String             @map("phone_number")
+  profileImage     String?            @map("profile_image")
+  lastActivatedAt  DateTime?          @map("last_activated_at")
+  role             UserRole           @default(USER) @map("role")
+  status           UserStatus         @default(ACTIVE) @map("status")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  deletedAt        DateTime?          @map("deleted_at")
+  freeAdoptionPosts FreeAdoptionPost[]
+  refreshToken     RefreshToken?
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+}
+
+model RefreshToken {
+  id           Int      @id @default(autoincrement())
+  refreshToken String   @map("refresh_token")
+  userId       Int      @unique @map("user_id")
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@map("refresh_tokens")
+}

@@ -11,29 +11,28 @@ export class FreeAdoptionService {
     private readonly awsS3Service: AwsS3Service,
   ) {}
 
-  async createFreeAdoption(body: CreateFreeAdoptionDto) {
-    const { subImages, mainImage, ...postData } = body;
-    const mainImageKey = `freeAdoption/${createUUIDv4()}`;
-    const subImageKeys = subImages.map(() => `freeAdoption/${createUUIDv4()}`);
-    const mainImageUrl = await this.awsS3Service.uploadFile(
-      mainImage,
-      mainImageKey,
-    );
-    console.log('typeof ageInMonths :: ', typeof body.ageInMonths);
-    const subImageUrls = await Promise.all(
-      subImages.map((image, index) =>
-        this.awsS3Service.uploadFile(image, subImageKeys[index]),
-      ),
-    );
-    return this.prisma.freeAdoptionPost.create({
-      data: {
-        uuid: createUUIDv4(),
-        ...postData,
-        mainImage: mainImageUrl.Location,
-        subImages: {
-          create: subImageUrls.map((image) => ({ image: image.Location })),
-        },
-      },
-    });
-  }
+  // async createFreeAdoption(body: CreateFreeAdoptionDto) {
+  //   const { subImages, mainImage, ...postData } = body;
+  //   const mainImageKey = `freeAdoption/${createUUIDv4()}`;
+  //   const subImageKeys = subImages.map(() => `freeAdoption/${createUUIDv4()}`);
+  //   const mainImageUrl = await this.awsS3Service.uploadFile(
+  //     mainImage,
+  //     mainImageKey,
+  //   );
+  //   const subImageUrls = await Promise.all(
+  //     subImages.map((image, index) =>
+  //       this.awsS3Service.uploadFile(image, subImageKeys[index]),
+  //     ),
+  //   );
+  //   return this.prisma.freeAdoptionPost.create({
+  //     data: {
+  //       uuid: createUUIDv4(),
+  //       ...postData,
+  //       mainImage: mainImageUrl.Location,
+  //       subImages: {
+  //         create: subImageUrls.map((image) => ({ image: image.Location })),
+  //       },
+  //     },
+  //   });
+  // }
 }
