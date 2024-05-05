@@ -37,4 +37,20 @@ export class FreeAdoptionService {
       },
     });
   }
+
+  async getFreeAdoptionByUUID(uuid: string) {
+    return this.prisma.freeAdoptionPost.findFirst({
+      where: { uuid },
+      include: {
+        subImages: true,
+        user: {
+          select: {
+            uuid: true,
+            nickName: true,
+            profileImage: true,
+          },
+        },
+      },
+    });
+  }
 }

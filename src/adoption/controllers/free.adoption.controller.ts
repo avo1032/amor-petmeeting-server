@@ -17,7 +17,11 @@ export class FreeAdoptionController {
     @Body() body: CreateFreeAdoptionDto,
     @UserInfo() user: User,
   ) {
-    console.log(user);
     return this.freeAdoptionService.createFreeAdoption(body, user);
+  }
+
+  @Get(':uuid')
+  async getFreeAdoptionByUUID(uuid: string) {
+    return this.freeAdoptionService.getFreeAdoptionByUUID(uuid);
   }
 }
