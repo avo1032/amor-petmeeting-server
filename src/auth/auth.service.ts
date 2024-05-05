@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import { AwsS3Service } from 'src/aws/services/aws.s3.service';
 import { createUUIDv4 } from 'src/common/utils/create.uuid';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -85,5 +85,24 @@ export class AuthService {
       update: { refreshToken: hashedRefreshToken },
       create: { refreshToken: hashedRefreshToken, userId: userId },
     });
+  }
+
+  async refreshTokens(refreshToken: string, userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { refreshToken: true },
+    });
+    if (!user || !user.refreshToken) {
+      throw new ForbiddenException('Access Denied');
+    }
+    const refreshTokenMatched = await argon2.verify(
+      user.refreshToken.refreshToken,
+      refreshToken,
+    );
+    if (!refreshTokenMatched) {
+      throw new ForbiddenException('Access Denied');
+    }
+    const tokens = await this.generateTokens(user.id, user.email);
+    return tokens
   }
 }
