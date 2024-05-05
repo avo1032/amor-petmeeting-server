@@ -24,4 +24,9 @@ export class FreeAdoptionController {
   async getFreeAdoptionByUUID(uuid: string) {
     return this.freeAdoptionService.getFreeAdoptionByUUID(uuid);
   }
+
+  @Get()
+  async getAllFreeAdoptions() {
+    return this.freeAdoptionService.getAllFreeAdoptions();
+  }
 }

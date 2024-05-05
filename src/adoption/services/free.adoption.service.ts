@@ -53,4 +53,19 @@ export class FreeAdoptionService {
       },
     });
   }
+
+  async getAllFreeAdoptions() {
+    return this.prisma.freeAdoptionPost.findMany({
+      include: {
+        subImages: true,
+        user: {
+          select: {
+            uuid: true,
+            nickName: true,
+            profileImage: true,
+          },
+        },
+      },
+    });
+  }
 }
