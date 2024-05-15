@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFreeAdoptionDto } from '../dto/req.free.adoption.dto';
 import { createUUIDv4 } from 'src/common/utils/create.uuid';
@@ -39,7 +43,7 @@ export class FreeAdoptionService {
   }
 
   async getFreeAdoptionByUUID(uuid: string) {
-    return this.prisma.freeAdoptionPost.findFirst({
+    return this.prisma.freeAdoptionPost.findUnique({
       where: { uuid },
       include: {
         subImages: true,
@@ -67,5 +71,24 @@ export class FreeAdoptionService {
         },
       },
     });
+  }
+
+  async deleteFreeAdoptionByUUID(uuid: string, user: User) {
+    if (user.role !== 'ADMIN') {
+      throw new ForbiddenException('Access Denied');
+    }
+    const freeAdoption = await this.prisma.freeAdoptionPost.findUnique({
+      where: { uuid },
+      include: {
+        subImages: true,
+      },
+    });
+    if (!freeAdoption) {
+      throw new NotFoundException('Free Adoption Post Not Found');
+    }
+    await this.prisma.subImage.deleteMany({
+      where: { freeAdoptionPostId: freeAdoption.id },
+    });
+    return await this.prisma.freeAdoptionPost.delete({ where: { uuid } });
   }
 }

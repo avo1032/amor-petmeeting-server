@@ -15,6 +15,11 @@ export class UserController {
     return this.authService.signUp(body);
   }
 
+  @Post('sign-in')
+  async signIn(@Body() body: SignUpReqDto) {
+    return this.authService.signIn(body);
+  }
+
   @UseGuards(RefreshTokenGuard)
   @Get('refresh')
   async refresh(@Req() req: Request) {

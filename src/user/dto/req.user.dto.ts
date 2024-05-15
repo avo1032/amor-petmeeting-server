@@ -33,3 +33,13 @@ export class SignUpReqDto {
   @HasMimeType(['image/jpeg', 'image/png'])
   profileImage?: MemoryStoredFile;
 }
+
+export class SignInReqDto {
+  @IsNotEmpty()
+  @IsString()
+  email: string;
+
+  @IsNotEmpty()
+  @IsString()
+  password: string;
+}
