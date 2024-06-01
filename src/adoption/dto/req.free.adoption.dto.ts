@@ -8,7 +8,7 @@ import {
   IsArray,
   ValidateNested,
 } from 'class-validator';
-import { AnimalType, Sex } from '@prisma/client';
+
 import {
   IsFile,
   MaxFileSize,
@@ -16,6 +16,7 @@ import {
   MemoryStoredFile,
 } from 'nestjs-form-data';
 import { Transform } from 'class-transformer';
+import { AnimalType, Sex } from '../entities/free.adoptioin.entity';
 
 export class CreateFreeAdoptionDto {
   @IsNotEmpty()

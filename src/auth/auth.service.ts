@@ -4,25 +4,30 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { AwsS3Service } from 'src/aws/services/aws.s3.service';
-import { createUUIDv4 } from 'src/common/utils/create.uuid';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { SignInReqDto, SignUpReqDto } from 'src/user/dto/req.user.dto';
 import * as argon2 from 'argon2';
+import { createUUIDv4 } from 'src/common/utils/create.uuid';
 import { JwtService } from '@nestjs/jwt';
+import { RefreshTokenRepository } from 'src/user/repositories/refresh.token.repository';
+import { UserRepository } from 'src/user/repositories/user.repository';
+import { User } from 'src/user/entities/user.entity';
+import { RefreshToken } from 'src/user/entities/refresh.token.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
     private readonly awsS3Service: AwsS3Service,
     private jwtService: JwtService,
+    private readonly userRepository: UserRepository,
+    private readonly refreshTokenRepository: RefreshTokenRepository,
   ) {}
 
   async signUp(body: SignUpReqDto) {
     const { profileImage, password, ...userData } = body;
-    const isExistUser = await this.prisma.user.findFirst({
-      where: { email: body.email },
-    });
+    const isExistUser = await this.userRepository.findOneByEmail(
+      userData.email,
+    );
+
     if (!!isExistUser) {
       throw new ConflictException('이미 존재하는 이메일입니다.');
     }
@@ -37,25 +42,22 @@ export class AuthService {
     }
     const hashedPassword = await this.hashData(password);
 
-    const user = await this.prisma.user.create({
-      data: {
-        ...userData,
-        uuid: createUUIDv4(),
-        password: hashedPassword,
-        lastActivatedAt: new Date(),
-        profileImage: profileImageUrl,
-      },
+    const user = Object.assign(new User(), {
+      ...userData,
+      uuid: createUUIDv4(),
+      password: hashedPassword,
+      lastActivatedAt: new Date(),
+      profileImage: profileImageUrl,
     });
+    await this.userRepository.save(user);
 
     const tokens = await this.generateTokens(user.id, user.email);
-    await this.updateRefreshToken(user.id, tokens.refreshToken);
+    await this.updateRefreshToken(user, tokens.refreshToken);
     return tokens;
   }
 
   async signIn(body: SignInReqDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: body.email },
-    });
+    const user = await this.userRepository.findOneByEmail(body.email);
     if (!user) {
       throw new ForbiddenException('Access Denied');
     }
@@ -64,7 +66,7 @@ export class AuthService {
       throw new ForbiddenException('Access Denied');
     }
     const tokens = await this.generateTokens(user.id, user.email);
-    await this.updateRefreshToken(user.id, tokens.refreshToken);
+    await this.updateRefreshToken(user, tokens.refreshToken);
     return tokens;
   }
 
@@ -98,20 +100,17 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async updateRefreshToken(userId: number, refreshToken: string) {
+  async updateRefreshToken(user: User, refreshToken: string) {
     const hashedRefreshToken = await this.hashData(refreshToken);
-    await this.prisma.refreshToken.upsert({
-      where: { userId: userId },
-      update: { refreshToken: hashedRefreshToken },
-      create: { refreshToken: hashedRefreshToken, userId: userId },
+    const generatedToken = Object.assign(new RefreshToken(), {
+      user,
+      refreshToken: hashedRefreshToken,
     });
+    await this.refreshTokenRepository.save(generatedToken);
   }
 
   async refreshTokens(refreshToken: string, userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { refreshToken: true },
-    });
+    const user = await this.userRepository.findOneById(userId);
     if (!user || !user.refreshToken) {
       throw new ForbiddenException('Access Denied');
     }

@@ -22,4 +22,16 @@ export class Environment {
   ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET as string;
   @IsString()
   REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET as string;
+
+  @IsString()
+  DB_HOST = process.env.DB_HOST as string;
+  @Type(() => Number)
+  @IsNumber()
+  DB_PORT = Number(process.env.DB_PORT);
+  @IsString()
+  DB_USERNAME = process.env.DB_USERNAME as string;
+  @IsString()
+  DB_PASSWORD = process.env.DB_PASSWORD as string;
+  @IsString()
+  DB_DATABASE = process.env.DB_DATABASE as string;
 }

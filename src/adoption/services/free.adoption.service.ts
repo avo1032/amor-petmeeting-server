@@ -3,17 +3,20 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFreeAdoptionDto } from '../dto/req.free.adoption.dto';
 import { createUUIDv4 } from 'src/common/utils/create.uuid';
 import { AwsS3Service } from 'src/aws/services/aws.s3.service';
-import { User } from '@prisma/client';
+import { FreeAdoptionRepository } from '../repositories/free.adoption.repository';
+import { FreeAdoptionPost } from '../entities/free.adoptioin.entity';
+import { SubImageRepository } from '../repositories/subImages.repository';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class FreeAdoptionService {
   constructor(
-    private prisma: PrismaService,
     private readonly awsS3Service: AwsS3Service,
+    private readonly freeAdoptionRepository: FreeAdoptionRepository,
+    private readonly subImageRepository: SubImageRepository,
   ) {}
 
   async createFreeAdoption(body: CreateFreeAdoptionDto, user: User) {
@@ -29,66 +32,36 @@ export class FreeAdoptionService {
         this.awsS3Service.uploadFile(image, subImageKeys[index]),
       ),
     );
-    return this.prisma.freeAdoptionPost.create({
-      data: {
-        userId: user.id,
-        uuid: createUUIDv4(),
-        ...postData,
-        mainImage: mainImageUrl.Location,
-        subImages: {
-          create: subImageUrls.map((image) => ({ image: image.Location })),
-        },
+    const post = Object.assign(new FreeAdoptionPost(), {
+      user,
+      ...postData,
+      uuid: createUUIDv4(),
+      mainImage: mainImageUrl.Location,
+      subImages: {
+        create: subImageUrls.map((image) => ({ image: image.Location })),
       },
     });
+    await this.freeAdoptionRepository.save(post);
+    return post;
   }
 
   async getFreeAdoptionByUUID(uuid: string) {
-    return this.prisma.freeAdoptionPost.findUnique({
-      where: { uuid },
-      include: {
-        subImages: true,
-        user: {
-          select: {
-            uuid: true,
-            nickName: true,
-            profileImage: true,
-          },
-        },
-      },
-    });
+    return this.freeAdoptionRepository.findOneByUUID(uuid);
   }
 
   async getAllFreeAdoptions() {
-    return this.prisma.freeAdoptionPost.findMany({
-      include: {
-        subImages: true,
-        user: {
-          select: {
-            uuid: true,
-            nickName: true,
-            profileImage: true,
-          },
-        },
-      },
-    });
+    return this.freeAdoptionRepository.getAllPosts();
   }
 
   async deleteFreeAdoptionByUUID(uuid: string, user: User) {
     if (user.role !== 'ADMIN') {
       throw new ForbiddenException('Access Denied');
     }
-    const freeAdoption = await this.prisma.freeAdoptionPost.findUnique({
-      where: { uuid },
-      include: {
-        subImages: true,
-      },
-    });
+    const freeAdoption = await this.freeAdoptionRepository.findOneByUUID(uuid);
     if (!freeAdoption) {
       throw new NotFoundException('Free Adoption Post Not Found');
     }
-    await this.prisma.subImage.deleteMany({
-      where: { freeAdoptionPostId: freeAdoption.id },
-    });
-    return await this.prisma.freeAdoptionPost.delete({ where: { uuid } });
+    await this.subImageRepository.delete(freeAdoption);
+    return await this.freeAdoptionRepository.softRemove(freeAdoption);
   }
 }

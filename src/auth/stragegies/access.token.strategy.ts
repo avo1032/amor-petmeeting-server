@@ -5,16 +5,16 @@ import {
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { UserRepository } from 'src/user/repositories/user.repository';
 
 type JwtPayload = {
-  sub: string;
+  sub: number;
   userEmail: string;
 };
 
 @Injectable()
 export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(private readonly userRepository: UserRepository) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: process.env.ACCESS_TOKEN_SECRET,
@@ -24,9 +24,8 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   async validate(payload: JwtPayload) {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: +payload.sub },
-      });
+      const user = await this.userRepository.findOneById(payload.sub);
+
       if (!user) {
         throw new UnauthorizedException('유효하지 않은 사용자입니다.');
       }

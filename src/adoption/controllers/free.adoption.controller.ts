@@ -4,8 +4,8 @@ import { CreateFreeAdoptionDto } from '../dto/req.free.adoption.dto';
 import { FormDataRequest } from 'nestjs-form-data';
 import { AccessTokenGuard } from 'src/common/guards/access.token.guard';
 import { UserInfo } from 'src/common/decorators/user.info';
-import { User } from '@prisma/client';
 import { Delete } from '@nestjs/common';
+import { User } from 'src/user/entities/user.entity';
 
 @Controller('free-adoption')
 export class FreeAdoptionController {
